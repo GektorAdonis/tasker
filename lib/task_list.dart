@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:tasker/task.dart';
 
 class TaskList extends StatefulWidget {
-  final tasks;
+  final List<Task> tasks;
   TaskList(this.tasks);
   @override
   State<TaskList> createState() => _TaskListState();
@@ -11,17 +13,23 @@ class TaskList extends StatefulWidget {
 class _TaskListState extends State<TaskList> {
   void _toggleIsComplete(String id) {
     var searchedTask = widget.tasks.firstWhere((task) => task.id == id);
-    print(searchedTask.id);
     setState(() {
       searchedTask.isComplete = !searchedTask.isComplete;
     });
-    if (searchedTask.isComplete == true) {
-      Future.delayed(Duration(seconds: 5), () {
+
+    Timer t = Timer(const Duration(seconds: 5), () {
+      if (searchedTask.isComplete == true) {
         setState(() {
           widget.tasks.removeWhere((task) => task.id == id);
         });
-      });
+      }
+    });
+
+    if (searchedTask.isComplete == false) {
+      t.cancel();
     }
+
+    void removeTask(String id) {}
   }
 
   @override
