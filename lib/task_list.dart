@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:tasker/task.dart';
+import 'package:http/http.dart' as http;
 
 class TaskList extends StatefulWidget {
   final List<Task> tasks;
@@ -11,25 +13,20 @@ class TaskList extends StatefulWidget {
 }
 
 class _TaskListState extends State<TaskList> {
-  void _toggleIsComplete(String id) {
+  Future<void> _toggleIsComplete(String id) async {
     var searchedTask = widget.tasks.firstWhere((task) => task.id == id);
+    final url = Uri.parse(
+        'https://tasker-cd27d-default-rtdb.firebaseio.com/tasks/$id.json');
     setState(() {
       searchedTask.isComplete = !searchedTask.isComplete;
     });
-
-    Timer t = Timer(const Duration(seconds: 5), () {
-      if (searchedTask.isComplete == true) {
-        setState(() {
-          widget.tasks.removeWhere((task) => task.id == id);
-        });
-      }
-    });
-
-    if (searchedTask.isComplete == false) {
-      t.cancel();
-    }
-
-    void removeTask(String id) {}
+    var response = await http.patch(
+      url,
+      body: json.encode({
+        'isComplete': searchedTask.isComplete,
+      }),
+    );
+    print(response.body);
   }
 
   @override
@@ -38,12 +35,16 @@ class _TaskListState extends State<TaskList> {
       itemBuilder: (ctx, i) {
         return ListTile(
           onTap: () {
+            print(widget.tasks[i].id);
             _toggleIsComplete(widget.tasks[i].id);
           },
           title: Text(widget.tasks[i].title),
           leading: Icon(
             widget.tasks[i].isComplete ? Icons.circle : Icons.circle_outlined,
           ),
+          trailing: Text(widget.tasks[i].date == null
+              ? ''
+              : widget.tasks[i].date.toString()),
         );
       },
       itemCount: widget.tasks.length,
