@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:tasker/task.dart';
 import 'package:tasker/task_list.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -16,6 +17,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Task> _tasks = [];
   final _titleController = TextEditingController();
+  TimeOfDay selectedTime = TimeOfDay.now();
+  DateFormat format = DateFormat('yyyy-MM-dd H:m');
 
   @override
   void initState() {
@@ -42,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Task(
             key,
             value['title'],
-            DateTime.parse(value['date']),
+            format.parse(value['date']),
             value['isComplete'],
           ),
         );
@@ -56,25 +59,34 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  Future<void> deleteCompletedTasks() async {
-    final url = Uri.parse(
-        'https://tasker-cd27d-default-rtdb.firebaseio.com/tasks.json');
-  }
-
   Future<void> addTask(Task newTask) async {
     final url = Uri.parse(
         'https://tasker-cd27d-default-rtdb.firebaseio.com/tasks.json');
     newTask.title = _titleController.text;
-    await http.post(url,
+    var response = await http.post(url,
         body: json.encode({
           'title': newTask.title,
-          'date': newTask.date.toString(),
+          'date': format.format(newTask.date),
           'isComplete': newTask.isComplete,
         }));
-
+    newTask.id = json.decode(response.body)['name'];
     setState(() {
       _tasks.add(newTask);
     });
+    print(newTask.id);
+  }
+
+  void _selectTime(BuildContext context) async {
+    final TimeOfDay? timeOfDay = await showTimePicker(
+      context: context,
+      initialTime: selectedTime,
+      initialEntryMode: TimePickerEntryMode.dial,
+    );
+    if (timeOfDay != null && timeOfDay != selectedTime) {
+      setState(() {
+        selectedTime = timeOfDay;
+      });
+    }
   }
 
   void showModal() {
@@ -105,11 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 firstDate: DateTime.now(),
                 lastDate: DateTime.utc(DateTime.now().year + 10),
                 onDateChanged: (date) {
-                  newTask.date = date;
-                  // await showTimePicker(
-                  //   context: context,
-                  //   initialTime: TimeOfDay.now(),
-                  // );
+                  _selectTime(context);
+                  newTask.date = DateTime(date.year, date.month, date.day,
+                      selectedTime.hour, selectedTime.minute);
                 }),
             ElevatedButton(
                 onPressed: (() {

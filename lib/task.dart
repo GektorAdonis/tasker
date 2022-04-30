@@ -1,7 +1,7 @@
 class Task {
   String id;
   String title;
-  DateTime? date;
+  DateTime date;
   bool isComplete;
 
   Task(this.id, this.title, this.date, this.isComplete);
